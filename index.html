@@ -1,0 +1,490 @@
+<title>Tagesbriefing</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: eine ruhige Spalte wie in der Meal-Prep-App. Oben Umschalter Morgen/Abend, morgens Karten, abends ein Chat. */
+:root{
+  --bg:#faf9f5; --sidebar:#f3f1ea; --surface:#ffffff; --ink:#141413; --ink-2:#3d3d3a; --muted:#73726c;
+  --line:#e6e3d9; --hover:#efede5; --accent:#c6613f; --accent-fill:#d97757; --accent-soft:#f6e6dd; --on-accent:#ffffff;
+  --ok:#5b7a3a; --warn:#b5651d;
+  --sans:"Geist", -apple-system, system-ui, sans-serif;
+  --mono:"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:14px; --r-sm:9px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#262624; --sidebar:#1f1e1d; --surface:#30302e; --ink:#faf9f5; --ink-2:#e5e3da; --muted:#a6a39a;
+  --line:#3e3e3a; --hover:#383835; --accent:#e08a6c; --accent-fill:#d97757; --accent-soft:#41302a; --on-accent:#1f1e1d;
+  --ok:#9bbd72; --warn:#e5a663; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#262624; --sidebar:#1f1e1d; --surface:#30302e; --ink:#faf9f5; --ink-2:#e5e3da; --muted:#a6a39a;
+  --line:#3e3e3a; --hover:#383835; --accent:#e08a6c; --accent-fill:#d97757; --accent-soft:#41302a; --on-accent:#1f1e1d;
+  --ok:#9bbd72; --warn:#e5a663; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font:16px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button,textarea{font:inherit;color:inherit}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent-fill);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+/* Kopfleiste */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:620px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:10px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.when{display:grid;min-width:0}
+.when b{font-weight:600;font-size:1rem;line-height:1.25}
+.when span{font-size:.82rem;color:var(--muted)}
+.kw{font:500 .78rem var(--mono);color:var(--muted);white-space:nowrap}
+.switch{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;background:var(--sidebar);border:1px solid var(--line);border-radius:12px}
+.switch button{border:none;background:none;padding:7px 2px;border-radius:9px;font-size:.9rem;color:var(--muted);cursor:pointer}
+.switch button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* Inhalt */
+.wrap{max-width:620px;margin:0 auto;padding-block:22px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.view{display:grid;gap:22px}
+.hello{font-weight:600;font-size:clamp(1.6rem,6vw,2rem);line-height:1.2;letter-spacing:-.02em}
+.hello em{font-style:normal;color:var(--accent)}
+.lead{color:var(--muted);margin:6px 0 0;font-size:.95rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.train{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.badge{flex:none;min-width:58px;padding:6px 10px;border-radius:999px;text-align:center;font:500 .82rem var(--mono);background:var(--accent-soft);color:var(--accent)}
+.badge.rest{background:var(--hover);color:var(--muted)}
+.train div{min-width:0}
+.train b{display:block;font-weight:600}
+.train span{font-size:.86rem;color:var(--muted)}
+.section{display:grid;gap:10px}
+.section h3{font-weight:600;font-size:1.05rem;letter-spacing:-.01em}
+.group{display:grid;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--line)}
+.item:first-child{border-top:none}
+label.item{cursor:pointer}
+.item input{appearance:none;-webkit-appearance:none;width:22px;height:22px;margin:0;flex:none;border:1.5px solid var(--muted);border-radius:50%;display:grid;place-items:center;cursor:pointer;background:var(--surface)}
+.item input:checked{background:var(--accent-fill);border-color:var(--accent-fill)}
+.item input:checked::after{content:"";width:6px;height:11px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.item .what{flex:1;min-width:0;overflow-wrap:anywhere}
+.item.done .what{text-decoration:line-through;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent-fill);flex:none;margin-top:9px}
+.empty{padding:14px;color:var(--muted);font-size:.92rem}
+.progress{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--accent-fill);transition:width .2s}
+.quote{padding:14px 16px;font-size:.98rem;color:var(--ink-2);border-left:3px solid var(--accent-fill);border-radius:0 var(--r) var(--r) 0;background:var(--surface)}
+.note{font-size:.84rem;color:var(--muted);margin:0}
+.note.warn{color:var(--warn)}
+
+/* Abend-Chat */
+.chat{display:grid;gap:14px}
+.msg{max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.claude{justify-self:start;color:var(--ink)}
+.msg.me{justify-self:end;background:var(--hover);border-radius:16px 16px 4px 16px;padding:9px 13px}
+.msg.thinking{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.msg.thinking{animation:pulse 1.2s ease-in-out infinite}}
+@keyframes pulse{50%{opacity:.4}}
+.composer{display:flex;gap:8px;align-items:flex-end;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:18px}
+.composer textarea{flex:1;min-width:0;border:none;background:none;resize:none;padding:6px 8px;max-height:160px;line-height:1.4}
+.composer textarea:focus-visible{outline:none}
+.composer:focus-within{border-color:var(--muted)}
+.send{width:36px;height:36px;flex:none;border:none;border-radius:10px;background:var(--accent-fill);color:var(--on-accent);display:grid;place-items:center;cursor:pointer}
+.send:disabled{opacity:.4;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.primary{border:none;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 16px;font-weight:500;cursor:pointer}
+.primary:disabled{opacity:.35;cursor:default}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;color:var(--ink-2)}
+.ghost:hover{background:var(--hover)}
+.result{display:grid;gap:14px;padding:16px}
+.result h3{font-weight:600;font-size:1.05rem}
+.res-block{display:grid;gap:4px}
+.res-block b{font-size:.78rem;color:var(--muted);font-weight:500}
+.res-block ul,.res-block ol{margin:0;padding-left:1.2em;display:grid;gap:2px}
+.ver{text-align:center;font:.75rem var(--mono);color:var(--muted);padding:28px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+</style>
+
+<header class="top"><div class="top-in">
+  <div class="bar">
+    <div class="when"><b id="dTitle"></b><span id="dSub"></span></div>
+    <span class="kw" id="kw"></span>
+  </div>
+  <div class="switch" role="tablist" aria-label="Ansicht">
+    <button role="tab" id="tab-morgen" data-tab="morgen" aria-selected="true">Morgen</button>
+    <button role="tab" id="tab-abend" data-tab="abend" aria-selected="false">Abend</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <section class="view" id="v-morgen">
+    <div>
+      <h1 class="hello" id="mHello">Guten Morgen, <em>Haakon</em></h1>
+      <p class="lead" id="mLead">Dein Tag auf einen Blick.</p>
+    </div>
+    <div class="panel train">
+      <span class="badge" id="trBadge">…</span>
+      <div><b id="trTitle">Training</b><span id="trSub"></span></div>
+    </div>
+    <div class="section">
+      <div class="bar"><h3>Top 3 für heute</h3><span class="kw" id="topCount"></span></div>
+      <div class="progress" id="topProg" hidden><span></span></div>
+      <div class="group" id="topList"><div class="empty">Lädt …</div></div>
+    </div>
+    <div class="section">
+      <h3>Termine heute</h3>
+      <div class="group" id="termList"><div class="empty">Lädt …</div></div>
+    </div>
+    <div class="quote" id="mQuote" hidden></div>
+    <p class="note" id="mNote"></p>
+  </section>
+
+  <section class="view" id="v-abend" hidden>
+    <div>
+      <h1 class="hello">Wie war dein <em>Tag</em>?</h1>
+      <p class="lead">Erzähl mir kurz davon. Ich frage nach, bis Top 3 und Termine für morgen stehen.</p>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <form class="composer" id="composer">
+      <textarea id="msg" rows="1" placeholder="Schreib einfach los …" aria-label="Nachricht"></textarea>
+      <button type="submit" class="send" id="sendBtn" aria-label="Senden" disabled><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14V4M4.5 8.5 9 4l4.5 4.5"/></svg></button>
+    </form>
+    <div class="actions">
+      <button class="primary" id="finishBtn" disabled>Debrief abschließen</button>
+      <button class="ghost" id="resetBtn" hidden>Neu anfangen</button>
+    </div>
+    <div class="panel result" id="result" hidden>
+      <h3 id="resTitle">Dein Debrief</h3>
+      <div id="resBody" class="view" style="gap:12px"></div>
+      <div class="actions">
+        <button class="primary" id="saveMd">Als Notiz speichern</button>
+        <button class="ghost" id="copyMd">Markdown kopieren</button>
+      </div>
+      <p class="note" id="resNote"></p>
+    </div>
+    <p class="note" id="aNote"></p>
+  </section>
+  <p class="ver">Tagesbriefing v0.1</p>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const WD = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+  const MON = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  // Mo + Do Push, Di + Fr Pull, Rest Ruhetag
+  const TRAIN = {1:"Push",4:"Push",2:"Pull",5:"Pull"};
+  const TRAIN_SUB = {Push:"Brust, Schultern, Trizeps", Pull:"Rücken, Bizeps"};
+
+  const pad = n => String(n).padStart(2,"0");
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+  const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+  const longDate = d => `${WD[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}`;
+  const kw = d => { const t = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day = t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-day); const y0 = new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y0)/864e5+1)/7); };
+  const training = d => TRAIN[d.getDay()] || null;
+
+  // Nach Mitternacht bis 4 Uhr zählt noch zum Vortag
+  const now = new Date();
+  const base = now.getHours() < 4 ? addDays(now,-1) : now;
+  const today = iso(base), todayD = parse(today), tomorrowD = addDays(todayD,1);
+
+  const store = {
+    get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    del(k){ try { localStorage.removeItem(k); } catch {} }
+  };
+
+  let db = null, sample = null, downloads = null;
+  let prev = null;   // letzter Debrief vor heute: liefert Top 3 und Termine für heute
+  let cur = null;    // heutiger Debrief, falls schon gespeichert
+  let turns = store.get("chat-"+today) || [];
+  let busy = false;
+
+  // Kopf
+  $("dTitle").textContent = longDate(todayD);
+  $("kw").textContent = "KW " + kw(todayD);
+
+  // Tabs
+  const tabs = ["morgen","abend"];
+  function show(tab){
+    tabs.forEach(t => { $("v-"+t).hidden = t !== tab; $("tab-"+t).setAttribute("aria-selected", t === tab); });
+    $("dSub").textContent = tab === "morgen" ? "Briefing" : "Debrief";
+    if (location.hash !== "#"+tab) history.replaceState(null, "", "#"+tab);
+  }
+  document.querySelectorAll(".switch button").forEach(b => b.onclick = () => show(b.dataset.tab));
+  addEventListener("hashchange", () => { const t = location.hash.slice(1); if (tabs.includes(t)) show(t); });
+  const h = now.getHours();
+  show(tabs.includes(location.hash.slice(1)) ? location.hash.slice(1) : (h >= 15 || h < 4 ? "abend" : "morgen"));
+
+  // ---------- Morgen ----------
+  function renderMorning(){
+    $("mHello").innerHTML = (h < 11 && h >= 4 ? "Guten Morgen, " : "Hallo ") + "<em>Haakon</em>";
+    const tr = training(todayD);
+    $("trBadge").textContent = tr || "Frei";
+    $("trBadge").classList.toggle("rest", !tr);
+    $("trTitle").textContent = tr ? `${tr}-Tag` : "Ruhetag";
+    $("trSub").textContent = tr ? TRAIN_SUB[tr] : "Schritte machen und Ernährung im Blick behalten";
+
+    const topList = $("topList"), termList = $("termList");
+    if (!db) {
+      topList.innerHTML = termList.innerHTML = '<div class="empty">Öffne die Seite in Claude, dann erscheinen hier deine Punkte vom Vorabend.</div>';
+      return;
+    }
+    if (!prev) {
+      $("mLead").textContent = "Noch kein Debrief vom Vorabend.";
+      topList.innerHTML = '<div class="empty">Heute Abend planst du im Debrief deine Top 3 für morgen. Sie stehen dann hier.</div>';
+      termList.innerHTML = '<div class="empty">Termine für morgen nennst du ebenfalls im Abend-Debrief.</div>';
+      $("topCount").textContent = ""; $("topProg").hidden = true; $("mQuote").hidden = true;
+      return;
+    }
+    const pd = parse(prev.datum);
+    const diff = Math.round((todayD - pd)/864e5);
+    $("mLead").textContent = diff === 1 ? "Aus deinem Debrief von gestern Abend." : `Aus deinem letzten Debrief (${longDate(pd)}).`;
+
+    const top = (prev.top3Morgen || []).slice(0,3);
+    const done = (prev.erledigt || []).slice(0, top.length);
+    topList.innerHTML = "";
+    if (!top.length) topList.innerHTML = '<div class="empty">Im letzten Debrief stand keine Top 3.</div>';
+    top.forEach((t,i) => {
+      const row = document.createElement("label");
+      row.className = "item" + (done[i] ? " done" : "");
+      row.innerHTML = `<input type="checkbox" id="top-${i}"><span class="what"></span>`;
+      row.querySelector(".what").textContent = t;
+      const cb = row.querySelector("input");
+      cb.checked = !!done[i];
+      cb.onchange = async () => {
+        const arr = top.map((_,j) => j === i ? cb.checked : !!(prev.erledigt||[])[j]);
+        prev.erledigt = arr;
+        row.classList.toggle("done", cb.checked);
+        updateCount(top.length);
+        try { await db.doc("tage/"+prev.datum).update({erledigt: arr}); $("mNote").textContent = ""; }
+        catch { $("mNote").textContent = "Häkchen konnte nicht gespeichert werden. Prüf deine Verbindung."; }
+      };
+      topList.append(row);
+    });
+    updateCount(top.length);
+
+    const terms = prev.termineMorgen || [];
+    termList.innerHTML = "";
+    if (!terms.length) termList.innerHTML = '<div class="empty">Keine Termine notiert.</div>';
+    terms.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = '<span class="dot"></span><span class="what"></span>';
+      row.querySelector(".what").textContent = t;
+      termList.append(row);
+    });
+
+    $("mQuote").hidden = !prev.fuerMorgen;
+    $("mQuote").textContent = prev.fuerMorgen || "";
+  }
+  function updateCount(n){
+    if (!n) { $("topCount").textContent = ""; $("topProg").hidden = true; return; }
+    const k = (prev.erledigt||[]).slice(0,n).filter(Boolean).length;
+    $("topCount").textContent = `${k}/${n}`;
+    $("topProg").hidden = false;
+    $("topProg").firstElementChild.style.width = (k/n*100) + "%";
+  }
+
+  // ---------- Abend ----------
+  const OPENER = "Hey Haakon, wie war dein Tag? Erzähl einfach, was gut lief und was nicht.";
+  function rules(){
+    const tr = training(todayD), trM = training(tomorrowD);
+    const top = prev && prev.datum !== today ? (prev.top3Morgen||[]) : [];
+    const done = prev ? (prev.erledigt||[]) : [];
+    const topTxt = top.length ? top.map((t,i) => `- ${t} (${done[i] ? "erledigt" : "nicht abgehakt"})`).join("\n") : "- keine notiert";
+    const termTxt = prev && (prev.termineMorgen||[]).length ? prev.termineMorgen.map(t => "- "+t).join("\n") : "- keine notiert";
+    return `Du bist Haakons Abend-Debrief-Partner in seiner Tagesbriefing-App. Haakon ist 21, Associate SAP-Berater im Bereich Utilities, macht eine langfristige Diät (Ziel 75 kg) und trainiert 4x pro Woche im Push-Pull-Split.
+
+Heute ist ${longDate(todayD)}. Training heute: ${tr || "Ruhetag"}. Morgen ist ${longDate(tomorrowD)}, Training morgen: ${trM || "Ruhetag"}.
+Seine Top 3 für heute waren:
+${topTxt}
+Seine Termine heute waren:
+${termTxt}
+
+Führe ein kurzes Debrief-Gespräch auf Deutsch. Duze ihn, sei freundlich, direkt und knapp: höchstens 2 bis 3 Sätze pro Antwort und immer nur eine Frage auf einmal. Decke nacheinander ab, sofern er es nicht schon erzählt hat:
+1. Was lief gut
+2. Was lief nicht so gut
+3. Was er heute gelernt hat (Job, Training, Ernährung, Privates)
+4. Welche Termine morgen anstehen (mit Uhrzeit, wenn er sie weiß)
+5. Seine Top 3 für morgen
+Wenn die Top 3 zu voll oder zu unkonkret sind, sag es ehrlich und hilf ihm, sie realistisch zu machen. Keine Listen, keine Überschriften, kein Markdown. Wenn alles beisammen ist, fasse die Top 3 in einem Satz zusammen und sag ihm, dass er jetzt auf „Debrief abschließen“ tippen kann.`;
+  }
+
+  function bubble(role, text, extra){
+    const el = document.createElement("div");
+    el.className = "msg " + (role === "user" ? "me" : "claude") + (extra ? " "+extra : "");
+    el.textContent = text;
+    $("chat").append(el);
+    return el;
+  }
+  function renderChat(){
+    $("chat").innerHTML = "";
+    bubble("assistant", OPENER);
+    turns.forEach(t => bubble(t.role, t.content));
+    syncButtons();
+  }
+  function syncButtons(){
+    const saved = !!cur && !$("result").hidden;
+    $("composer").hidden = saved;
+    $("sendBtn").disabled = busy || !sample || !$("msg").value.trim();
+    $("finishBtn").disabled = busy || !sample || !turns.some(t => t.role === "user");
+    $("finishBtn").hidden = saved;
+    $("resetBtn").hidden = !(turns.length || cur);
+  }
+  const msgFor = code => ({
+    not_granted: "Du hast Claude für diese Seite nicht erlaubt. Lade die Seite neu, um es nochmal zuzulassen.",
+    sampling_disabled: "Claude ist für dein Konto gerade nicht verfügbar.",
+    rate_limited: "Gerade zu viele Anfragen. Versuch es in ein paar Minuten nochmal.",
+    session_expired: "Bitte melde dich bei Claude neu an.",
+    invalid_json: "Die Zusammenfassung hat nicht geklappt. Tipp nochmal auf „Debrief abschließen“.",
+  })[code] || "Da ist etwas schiefgegangen. Versuch es gleich nochmal.";
+
+  async function send(e){
+    e.preventDefault();
+    const text = $("msg").value.trim();
+    if (!text || busy || !sample) return;
+    $("msg").value = ""; grow();
+    turns.push({role:"user", content:text});
+    store.set("chat-"+today, turns);
+    bubble("user", text);
+    const out = bubble("assistant", "Denkt nach …", "thinking");
+    busy = true; syncButtons(); $("aNote").textContent = "";
+    try {
+      const {text: reply} = await sample(
+        [{role:"user", content: rules()}, {role:"assistant", content: OPENER}, ...turns.slice(-30)],
+        {cache:false, modelTier:"quick", onText: ({text}) => { out.classList.remove("thinking"); out.textContent = text; }}
+      );
+      out.classList.remove("thinking"); out.textContent = reply;
+      turns.push({role:"assistant", content:reply});
+      store.set("chat-"+today, turns);
+    } catch (err) {
+      out.remove();
+      $("aNote").textContent = msgFor(err && err.code);
+    } finally {
+      busy = false; syncButtons();
+      out.scrollIntoView({block:"nearest"});
+    }
+  }
+
+  async function finish(){
+    if (busy || !sample) return;
+    busy = true; syncButtons();
+    $("aNote").textContent = "Fasse zusammen …";
+    const convo = [ "Claude: "+OPENER, ...turns.map(t => (t.role === "user" ? "Haakon: " : "Claude: ") + t.content) ].join("\n");
+    try {
+      const r = await sample.json(
+`Hier ist Haakons Abend-Debrief-Gespräch vom ${longDate(todayD)}. Fasse nur zusammen, was Haakon selbst gesagt hat, nichts erfinden. Kurze Stichpunkte auf Deutsch, aus seiner Sicht, ohne seinen Namen (z. B. "Einkauf erledigt").
+
+Antworte nur mit diesem JSON:
+{"lief":[string],"nichtLief":[string],"gelernt":[string],"termineMorgen":[string],"top3Morgen":[string],"fuerMorgen":string}
+- termineMorgen: Termine für ${longDate(tomorrowD)}, mit Uhrzeit vorne, wenn genannt (z. B. "09:30 Weekly mit dem Team")
+- top3Morgen: höchstens 3 Punkte, in seiner Reihenfolge
+- fuerMorgen: ein kurzer, ermutigender Satz für morgen früh in Du-Form, höchstens 15 Wörter
+Leere Listen, wenn etwas nicht vorkam.
+
+Gespräch:
+${convo}`, {modelTier:"default"});
+      const arr = v => Array.isArray(v) ? v.map(String).filter(s => s.trim()) : [];
+      const doc = {
+        datum: today,
+        lief: arr(r.lief), nichtLief: arr(r.nichtLief), gelernt: arr(r.gelernt),
+        termineMorgen: arr(r.termineMorgen), top3Morgen: arr(r.top3Morgen).slice(0,3),
+        fuerMorgen: typeof r.fuerMorgen === "string" ? r.fuerMorgen : "",
+        erledigt: [false,false,false],
+        chat: turns, gespeichert: new Date().toISOString()
+      };
+      $("aNote").textContent = "";
+      cur = doc;
+      if (db) {
+        try { await db.doc("tage/"+today).set(doc); store.del("chat-"+today); }
+        catch { $("aNote").textContent = "Speichern hat nicht geklappt. Exportier die Notiz unten, damit nichts verloren geht."; }
+      }
+      renderResult();
+    } catch (err) {
+      $("aNote").textContent = msgFor(err && err.code);
+    } finally {
+      busy = false; syncButtons();
+    }
+  }
+
+  function markdown(d){
+    const dd = parse(d.datum);
+    const list = a => a.map(x => "- "+x).join("\n");
+    const sec = (t,a) => a.length ? `## ${t}\n${list(a)}\n\n` : "";
+    const plan = d.top3Morgen.length ? `## Plan für morgen\n${d.top3Morgen.map((x,i) => `${i+1}. ${x}`).join("\n")}\n\n` : "";
+    const prevLink = prev && prev.datum !== d.datum ? `Vorher: [[${prev.datum}]] · ` : "";
+    return `---\ntags: [planung, debrief]\naktualisiert: ${d.datum}\n---\n\n# Debrief ${d.datum} (${WD[dd.getDay()]})\n\n`
+      + sec("Was lief", d.lief) + sec("Was nicht lief", d.nichtLief) + sec("Gelernt", d.gelernt)
+      + plan + sec("Termine morgen", d.termineMorgen)
+      + `${prevLink}Übersicht: [[Planung-Übersicht]]\n`;
+  }
+
+  function renderResult(){
+    if (!cur) { $("result").hidden = true; syncButtons(); return; }
+    const body = $("resBody"); body.innerHTML = "";
+    const block = (label, items, ordered) => {
+      if (!items.length) return;
+      const w = document.createElement("div"); w.className = "res-block";
+      const b = document.createElement("b"); b.textContent = label; w.append(b);
+      const l = document.createElement(ordered ? "ol" : "ul");
+      items.forEach(x => { const li = document.createElement("li"); li.textContent = x; l.append(li); });
+      w.append(l); body.append(w);
+    };
+    block("Was lief", cur.lief); block("Was nicht lief", cur.nichtLief); block("Gelernt", cur.gelernt);
+    block("Top 3 für morgen", cur.top3Morgen, true); block("Termine morgen", cur.termineMorgen);
+    if (!body.children.length) body.innerHTML = '<p class="note">Im Gespräch kam noch nichts Konkretes vor.</p>';
+    $("resTitle").textContent = "Debrief gespeichert";
+    $("resNote").textContent = db ? "Morgen früh siehst du Top 3 und Termine im Briefing." : "";
+    $("result").hidden = false;
+    syncButtons();
+  }
+
+  $("saveMd").onclick = async () => {
+    if (!cur) return;
+    if (!downloads) { $("resNote").textContent = "Speichern geht hier nicht. Nutz „Markdown kopieren“."; return; }
+    try { await downloads.save({filename: cur.datum + ".md", data: markdown(cur)}); $("resNote").textContent = "Leg die Datei in deinem Vault unter Planung/Debrief ab."; }
+    catch (e) { $("resNote").textContent = e && e.code === "declined" ? "Nicht gespeichert." : "Speichern hat nicht geklappt. Nutz „Markdown kopieren“."; }
+  };
+  $("copyMd").onclick = async () => {
+    if (!cur) return;
+    try { await navigator.clipboard.writeText(markdown(cur)); $("resNote").textContent = "Kopiert. In Obsidian eine neue Notiz anlegen und einfügen."; }
+    catch { $("resNote").textContent = "Kopieren ging nicht. Nutz „Als Notiz speichern“."; }
+  };
+  $("resetBtn").onclick = () => {
+    turns = []; cur = null; store.del("chat-"+today);
+    $("result").hidden = true; $("aNote").textContent = "Neues Gespräch. Gespeichert wird erst, wenn du abschließt.";
+    renderChat();
+  };
+
+  const grow = () => { const t = $("msg"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight,160) + "px"; };
+  $("msg").addEventListener("input", () => { grow(); syncButtons(); });
+  $("msg").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey && !matchMedia("(pointer:coarse)").matches) { e.preventDefault(); $("composer").requestSubmit(); }
+  });
+  $("composer").addEventListener("submit", send);
+  $("finishBtn").onclick = finish;
+
+  // ---------- Start ----------
+  renderMorning();
+  renderChat();
+  $("aNote").textContent = "Verbinde mit Claude …";
+
+  (async () => {
+    const c = window.claude;
+    if (!c || !c.use) { $("aNote").textContent = "Der Chat funktioniert nur, wenn du die Seite in Claude öffnest."; renderMorning(); return; }
+    [db, sample, downloads] = await Promise.all([c.use("db"), c.use("sample"), c.use("downloads")]);
+    $("aNote").textContent = sample ? "" : "Der Chat ist hier nicht verfügbar. Öffne die Seite in der Claude-App.";
+    if (db) {
+      try {
+        const snap = await db.collection("tage").orderBy("datum","desc").limit(10).get();
+        const docs = snap.docs.map(d => d.data()).filter(Boolean);
+        prev = docs.find(d => d.datum < today) || null;
+        const t = docs.find(d => d.datum === today);
+        if (t) { cur = t; if (!turns.length && Array.isArray(t.chat)) turns = t.chat; }
+      } catch {
+        $("mNote").textContent = "Deine Debriefs konnten nicht geladen werden. Prüf deine Verbindung.";
+        $("mNote").classList.add("warn");
+      }
+    }
+    renderMorning();
+    renderChat();
+    if (cur) renderResult();
+  })();
+})();
+</script>
